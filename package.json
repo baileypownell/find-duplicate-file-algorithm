@@ -1,0 +1,24 @@
+{
+  "name": "find-duplicate-file-algorithm",
+  "version": "1.0.0",
+  "description": "Assuming there is at max 1 duplicate for any given file, find all duplicated files and return an array of arrays, where each sub array's first element is the duplicate and its second element is the original file",
+  "main": "find-duplicate-files.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./find-duplicate-files.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baileypownell/find-duplicate-file-algorithm.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/baileypownell/find-duplicate-file-algorithm/issues"
+  },
+  "homepage": "https://github.com/baileypownell/find-duplicate-file-algorithm#readme",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "md5-file": "^5.0.0"
+  }
+}
