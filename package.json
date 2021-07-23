@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/baileypownell/find-duplicate-file-algorithm#readme",
   "dependencies": {
+    "file-to-sha512": "0.0.1",
     "fs": "0.0.1-security",
     "md5-file": "^5.0.0"
   }
