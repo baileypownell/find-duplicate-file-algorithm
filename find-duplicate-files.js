@@ -1,38 +1,31 @@
 const fs = require("fs")
 const path = require('path')
 const md5File = require('md5-file')
-// traverse the entire hard drive to find duplicates
-// a duplicate is a file whose md5 hash is euqal to the hash of another md5 file 
+// traverse a directory ( a general tree ) to find duplicates
+// a duplicate is a file whose hash is equal to the hash of another file 
 
-// process
-// 1) start to hash all files in a Map() where the md5 hash is the key and the array of image paths is the value
-// 2) when a file is hashed, compare its hash to the Map
-// 3) if a file's hash is already in the Map [duplicatefilename, originalfilename] into the array to return 
-
-const directory = '/'
-
-// cannot md5 hash these files due to not being able to open the files
-const bannedExtensions = new Set(['.db', '.keytab', '.passwd', '.plist'])
+const directory = '/Users/baileypownell/Desktop'
 
 console.log('------- THE CRAWLER HAS STARTED -------')
 
+// uses recursion; undersirable
 const crawl = (directory) => {
     fs.readdir(directory, (e, items) => {
         if (items) {
             items.forEach(item => {
-                // console.log('item = ', item)
+                console.log('item = ', item)
                 let itemPath = path.join(directory, item)
                 // console.log(itemPath)
                 fs.stat(itemPath, (e, stats) => {
                     // checking for an extension prevent us from checking OS-specific files like .File
                     const absolutePath = path.resolve(itemPath)
-                    const hasFileExtension = !!path.extname(absolutePath)
+                    // const hasFileExtension = !!path.extname(absolutePath)
                     if (stats && stats.isDirectory()) {
                         crawl(itemPath)
-                    } else if (stats && stats.isFile() && hasFileExtension && !bannedExtensions.has(path.extname(absolutePath))) {
-                        console.log(`The ${item}, path = ${itemPath}, has a file extension`)
+                    } else if (stats && stats.isFile()) {
+                        // console.log(`The ${item}, path = ${itemPath}, has a file extension`)
                         // hash it, compare, store, or return 
-                        const hash = md5File.sync(`${itemPath}`)
+                        const hash = 'unknown' //md5File.sync(`${itemPath}`)
                         console.log(`The MD5 sum of ${itemPath} is: ${hash}`)
 
                     }
@@ -42,21 +35,64 @@ const crawl = (directory) => {
     })
 }
 
-crawl(directory)
+// crawl(directory)
 
-// async function* walk(dir) {
-//     for await (const d of await fs.promises.opendir(dir)) {
-//         const entry = path.join(dir, d.name);
-//         console.log(entry)
-//         if (d.isDirectory()) yield* walk(entry);
-//         else if (d.isFile()) yield entry;
-//     }
-// }
+// to avoid recursion, use a stack to record the fallback route
+// which strategy is more appropriate: preorder or postorder? 
+// (inorder is not useful for general trees, only binary)
+class TreeNode {
+    path 
+    children 
 
-// // Then, use it with a simple async for loop
-// async function main() {
-//     for await (const p of walk(directory))
-//         console.log(p)
-// }
+    constructor(path) {
+        this.path = path 
+        this.children = []
+    }
+}
 
-// main()
+// using depth-first search with a stack
+const getHashedFiles = (directory) => {
+    const hashedFileObj = {}
+    const root = new TreeNode(directory)
+    // TreeNode { path: '/Users/baileypownell/Desktop', children: [] }
+    const stack = [root]
+    // [ TreeNode { path: '/Users/baileypownell/Desktop', children: [] } ]
+    while (stack.length) {
+        const currentNode = stack.pop() 
+        if (currentNode) {     
+            const children = fs.readdirSync(currentNode.path)
+
+            for (let child of children) {
+                const childPath = `${currentNode.path}/${child}`
+                const childNode = new TreeNode(childPath)
+
+                currentNode.children.push(childNode)
+                // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
+                if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path, { throwIfNoEntry: false }).isDirectory()) {
+                    stack.push(childNode)
+                } else if (fs.statSync(childNode.path).isFile()) {
+                    // TO-DO: only hash part of the file
+                    const hash = md5File.sync(`${childNode.path}`)                   
+                    hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
+                }
+            }
+        }
+    }
+
+    return hashedFileObj
+}
+
+const hashedFiles = getHashedFiles(directory)
+
+const returnResult = []
+
+Object.keys(hashedFiles).forEach(hash => {
+    if (hashedFiles[hash].length > 1) {
+        const duplicateFiles = hashedFiles[hash]
+        returnResult.push(duplicateFiles)
+    }
+})
+// console.log(returnResult)
+// console.log(returnResult.length)
+
+console.log(`There are ${returnResult.length} instances of unique files that have been duplicated at least once in ${directory}.`)
