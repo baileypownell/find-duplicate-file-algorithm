@@ -2,10 +2,10 @@
   "name": "find-duplicate-file-algorithm",
   "version": "1.0.0",
   "description": "Assuming there is at max 1 duplicate for any given file, find all duplicated files and return an array of arrays, where each sub array's first element is the duplicate and its second element is the original file",
-  "main": "find-duplicate-files.js",
+  "main": "find-duplicate-files-iterative.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./find-duplicate-files.js"
+    "start": "node ./find-duplicate-files-iterative.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "dependencies": {
     "file-to-sha512": "0.0.1",
     "fs": "0.0.1-security",
+    "graceful-fs": "^4.2.6",
     "md5-file": "^5.0.0"
   }
 }
