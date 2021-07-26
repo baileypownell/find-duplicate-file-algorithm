@@ -1,7 +1,5 @@
 const fs = require("fs")
-const hasha = require('hasha');
 const path = require('path')
-const md5File = require('md5-file')
 var crypto = require('crypto');
 // traverse a directory ( a general tree ) to find duplicates
 // a duplicate is a file whose hash is equal to the hash of another file 
@@ -55,45 +53,6 @@ class TreeNode {
 //     return hashedFileObj
 // }
 
-// using depth-first search with a stack
-// const getHashedFiles = async (directory) => {
-//     return new Promise(async(resolve, reject) => {
-//         const hashedFileObj = {}
-//         const root = new TreeNode(directory)
-//         // TreeNode { path: '/Users/baileypownell/Desktop', children: [] }
-//         const stack = [root]
-//         // [ TreeNode { path: '/Users/baileypownell/Desktop', children: [] } ] 
-//         while (stack.length) {
-//             const currentNode = stack.pop() 
-//             if (currentNode) {     
-//                 const children = fs.readdirSync(currentNode.path)
-//                 for (let child of children) {
-//                     const childPath = `${currentNode.path}/${child}`
-//                     const childNode = new TreeNode(childPath)
-    
-//                     currentNode.children.push(childNode)
-//                     // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
-//                     if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path).isDirectory()) {
-//                         stack.push(childNode)
-//                     } else if (fs.statSync(childNode.path).isFile()) {
-//                         const hash = md5File.sync(`${childNode.path}`)                   
-//                         hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
-//                         try {
-//                             await getHash(childNode.path, hashedFileObj)
-                            
-//                         } catch(e) {
-//                             console.log(e)
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-    
-//         return resolve(hashedFileObj)
-//     })
-  
-// }
-
 // ASYNCHRONOUS APPROACH
 const getHashedFiles = async (directory) => {
     return new Promise(async(resolve, reject) => {
@@ -118,7 +77,6 @@ const getHashedFiles = async (directory) => {
                         try {
                             const hash = await getHash(childNode.path, hashedFileObj)
                             hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
-                            // console.log(hash)
                         } catch(e) {
                             console.log(e)
                         }
