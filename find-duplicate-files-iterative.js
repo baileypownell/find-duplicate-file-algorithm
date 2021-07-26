@@ -62,18 +62,16 @@ const getHashedFiles = async (directory) => {
         const stack = [root]
         // [ TreeNode { path: '/Users/baileypownell/Desktop', children: [] } ] 
         while (stack.length) {       
-            // console.log(stack.length)  
             const currentNode = stack.pop() 
             if (currentNode) {   
-                // console.log(stack.length)  
-                const children = fs.readdirSync(currentNode.path)
-                children.forEach(async(child, index) => {
-                    // console.log('index = ', index, children.length)
+                const children = fs.readdirSync(currentNode.path).filter(file => !file.includes('.DS_Store'))
+                let index = 0
+                for (let child of children) {
                     const childPath = `${currentNode.path}/${child}`
                     const childNode = new TreeNode(childPath)
-                    const endOfTreeSearch = index === children.length - 1 && stack.length === 0 
-                    // console.log(endOfTreeSearch)
+                    
                     currentNode.children.push(childNode)
+                    const endOfTreeSearch = index === children.length - 1 && stack.length === 0 
                     // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
                     if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path).isDirectory()) {
                         stack.push(childNode)
@@ -85,10 +83,11 @@ const getHashedFiles = async (directory) => {
                                 resolve(hashedFileObj)
                             }
                         } catch(e) {
-                            console.log(e)
+                            console.log('Error: ', e)
                         }
                     }
-                })
+                    index++
+                }
             }
         }
     })
@@ -112,7 +111,7 @@ const getHash = (path) => {
 const findDuplicateFiles = async() => {
     try {
         const hashedFiles = await getHashedFiles(directory)
-        // console.log('hashedFiles = ', hashedFiles)
+        console.log(hashedFiles)
         const returnResult = []
 
         Object.keys(hashedFiles).forEach(hash => {
@@ -122,14 +121,14 @@ const findDuplicateFiles = async() => {
                 returnResult.push(duplicateFiles)
             }
         })
-        console.log('returnResult: ', returnResult)
-        console.log(`There are ${returnResult.length} instances of unique files that have been duplicated at least once in ${directory}.`)
+        // console.log('returnResult: ', returnResult)
+        console.log(`${returnResult.length} unique file(s) have been duplicated at least once in ${directory}.`)
     } catch(e) {
         console.log(e)
     }
 } 
 
-findDuplicateFiles().then(res => console.log(res))
+findDuplicateFiles()
 
 
 
