@@ -22,6 +22,9 @@ class TreeNode {
 // ASYNCHRONOUS APPROACH
 const getHashedFiles = async (directory) => {
     return new Promise(async(resolve, reject) => {
+        if (!fs.existsSync(directory)) {
+            reject('Provided path is invalid.')
+        }
         const hashedFileObj = {}
         const root = new TreeNode(directory)
         // TreeNode { path: '/Users/baileypownell/Desktop', children: [] }
@@ -48,7 +51,7 @@ const getHashedFiles = async (directory) => {
                             stack.push(childNode)
                         } else if (fs.statSync(childNode.path).isFile()) {
                             try {
-                                const hash = await getHash(childNode.path)
+                                const hash = await generateHash(childNode.path)
                                 hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
                                 if (endOfTreeSearch) {
                                     resolve(hashedFileObj)
@@ -70,7 +73,7 @@ const getHashedFiles = async (directory) => {
     })
 }
 
-const getHash = (path) => {
+const generateHash = (path) => {
     return new Promise((resolve, reject) => {
         const hash = crypto.createHash('md5')
          // only reading half the file 
@@ -82,26 +85,16 @@ const getHash = (path) => {
     })
 }
 
-const findDuplicateFiles = async() => {
-    try {
-        const hashedFiles = await getHashedFiles(directory)
-        const returnResult = []
-
-        Object.keys(hashedFiles).forEach(hash => {
-            if (hashedFiles[hash].length > 1) {
-                const duplicateFiles = hashedFiles[hash]
-                returnResult.push(duplicateFiles)
-            }
-        })
-        console.log('Duplicate files: ', returnResult)
-        console.log(`${returnResult.length} unique file(s) have been duplicated at least once in ${directory}.`)
-    } catch(e) {
-        console.log(e)
-    }
-} 
-
-findDuplicateFiles()
-
-
-
-// verifying that they are duplicates with stronger hashing algo
+getHashedFiles(directory)
+.then(hashedFiles => {
+    const returnResult = []
+    Object.keys(hashedFiles).forEach(hash => {
+        if (hashedFiles[hash].length > 1) {
+            const duplicateFiles = hashedFiles[hash]
+            returnResult.push(duplicateFiles)
+        }
+    })
+    console.log('Duplicate files: ', returnResult)
+    console.log(`${returnResult.length} unique file(s) have been duplicated at least once in ${directory}.`)
+})
+.catch(err => console.log('THERE WAS AN ERROR: ', err))
