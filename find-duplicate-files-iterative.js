@@ -1,9 +1,8 @@
-const fs = require("fs")
-const path = require('path')
-var crypto = require('crypto');
+const fs = require('fs')
+var crypto = require('crypto')
 // traverse a directory ( a general tree ) to find duplicates
 // a duplicate is a file whose hash is equal to the hash of another file 
-const directory = '/Users/baileypownell/Desktop/duplicates'
+const directory = '/Users/baileypownell/Desktop'
 
 console.log('------- THE CRAWLER HAS STARTED -------')
 
@@ -20,39 +19,6 @@ class TreeNode {
     }
 }
 
-// SYNCHRONOUS APPROACH
-// // using depth-first search with a stack
-// const getHashedFiles = (directory) => {
-//     const hashedFileObj = {}
-//     const root = new TreeNode(directory)
-//     // TreeNode { path: '/Users/baileypownell/Desktop', children: [] }
-//     const stack = [root]
-//     // [ TreeNode { path: '/Users/baileypownell/Desktop', children: [] } ]
-//     while (stack.length) {
-//         const currentNode = stack.pop() 
-//         if (currentNode) {     
-//             const children = fs.readdirSync(currentNode.path)
-
-//             for (let child of children) {
-//                 const childPath = `${currentNode.path}/${child}`
-//                 const childNode = new TreeNode(childPath)
-
-//                 currentNode.children.push(childNode)
-//                 // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
-//                 if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path, { throwIfNoEntry: false }).isDirectory()) {
-//                     stack.push(childNode)
-//                 } else if (fs.statSync(childNode.path).isFile()) {
-//                     // TO-DO: only hash part of the file
-//                     const hash = md5File.sync(`${childNode.path}`)                   
-//                     hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
-//                 }
-//             }
-//         }
-//     }
-
-//     return hashedFileObj
-// }
-
 // ASYNCHRONOUS APPROACH
 const getHashedFiles = async (directory) => {
     return new Promise(async(resolve, reject) => {
@@ -64,36 +30,44 @@ const getHashedFiles = async (directory) => {
         while (stack.length) {       
             const currentNode = stack.pop() 
             if (currentNode) {   
-                const children = fs.readdirSync(currentNode.path).filter(file => !file.includes('.DS_Store'))
-                let index = 0
-                for (let child of children) {
-                    const childPath = `${currentNode.path}/${child}`
-                    const childNode = new TreeNode(childPath)
-                    
-                    currentNode.children.push(childNode)
-                    const endOfTreeSearch = index === children.length - 1 && stack.length === 0 
-                    // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
-                    if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path).isDirectory()) {
-                        stack.push(childNode)
-                    } else if (fs.statSync(childNode.path).isFile()) {
-                        try {
-                            const hash = await getHash(childNode.path)
-                            hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
-                            if (endOfTreeSearch) {
-                                resolve(hashedFileObj)
-                            }
-                        } catch(e) {
-                            console.log('Error: ', e)
-                        }
+                try {
+                    const children = fs.readdirSync(currentNode.path).filter(file => !file.includes('.DS_Store'))
+                    if (!children.length && !stack.length) {
+                        // directory is completely empty
+                        resolve([])
                     }
-                    index++
+                    let index = 0
+                    for (let child of children) {
+                        const childPath = `${currentNode.path}/${child}`
+                        const childNode = new TreeNode(childPath)
+                        
+                        currentNode.children.push(childNode)
+                        const endOfTreeSearch = index === children.length - 1 && stack.length === 0 
+                        // ignoring node_modules because a number of file types therein throw errors ('no such file or directory') in Node
+                        if (!childNode.path.includes('node_modules') && fs.statSync(childNode.path).isDirectory()) {
+                            stack.push(childNode)
+                        } else if (fs.statSync(childNode.path).isFile()) {
+                            try {
+                                const hash = await getHash(childNode.path)
+                                hashedFileObj[hash] = (hashedFileObj[hash] || []).concat(childNode.path)
+                                if (endOfTreeSearch) {
+                                    resolve(hashedFileObj)
+                                }
+                            } catch(e) {
+                                console.log('Error: ', e)
+                            }
+                        }
+                        index++
+                    }
+                } catch(e) {
+                    if (e.code === 'ENOENT') {
+                        resolve('No such file or directory.')
+                    }
+                    reject(e)
                 }
             }
         }
     })
-
-    // we know we've reached the end of the tree when the current child is equal to children.length - 1 && the stack size is back to 0 
-    // how does this work for empty directories though, or directories without any child directories?
 }
 
 const getHash = (path) => {
@@ -111,17 +85,15 @@ const getHash = (path) => {
 const findDuplicateFiles = async() => {
     try {
         const hashedFiles = await getHashedFiles(directory)
-        console.log(hashedFiles)
         const returnResult = []
 
         Object.keys(hashedFiles).forEach(hash => {
-            // console.log(hash)
             if (hashedFiles[hash].length > 1) {
                 const duplicateFiles = hashedFiles[hash]
                 returnResult.push(duplicateFiles)
             }
         })
-        // console.log('returnResult: ', returnResult)
+        console.log('Duplicate files: ', returnResult)
         console.log(`${returnResult.length} unique file(s) have been duplicated at least once in ${directory}.`)
     } catch(e) {
         console.log(e)
