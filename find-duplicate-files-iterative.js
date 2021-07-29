@@ -2,7 +2,7 @@ const fs = require('fs')
 var crypto = require('crypto')
 // traverse a directory ( a general tree ) to find duplicates
 // a duplicate is a file whose hash is equal to the hash of another file 
-const directory = '/Users/baileypownell/Desktop'
+const directory = '/Users/baileypownell/Desktop/duplicates'
 
 console.log('------- THE CRAWLER HAS STARTED -------')
 
@@ -81,6 +81,7 @@ const generateHash = (path) => {
          const partialFileRead = fs.createReadStream(path, { start: 0, end: endByteSize })
          partialFileRead
          .on('data', async(chunk) => hash.update(chunk))
+         .on('error', (error) => reject(error))
          .on('end', () => resolve(hash.digest('hex')))
     })
 }
